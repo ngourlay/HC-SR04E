@@ -18,7 +18,7 @@
 #  :use_assembly: FALSE
 
 :environment:
-  - :mcu: atmega328p
+  - :mcu: attiny24
   - :fcpu: 16000000UL
   - :serial_port: /dev/ttyUSB0
   - :objcopy: avr-objcopy
