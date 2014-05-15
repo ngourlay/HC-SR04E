@@ -12,7 +12,7 @@ raise "SERIAL_PORT is not defined in the environment!"
 end
 end
  
-desc "Convert the output binary to a hex file for programming to the Arduino"
+desc "Convert the output binary to a hex file for programming to the AVR."
 task :convert => :release do
 bin_file = "build/release/#{RELEASE_BUILD_OUTPUT}.bin"
 hex_file = "build/release/#{RELEASE_BUILD_OUTPUT}.hex"
@@ -21,10 +21,18 @@ puts cmd
 sh cmd
 end
  
-desc "Program the Arduino over the serial port."
+desc "Program the AVR over the serial port."
 task :program => [:convert, :serial_port] do
 hex_file = "build/release/#{RELEASE_BUILD_OUTPUT}.hex"
-cmd = "avrdude -F -V -c arduino -p #{ENV['MCU']} -P #{ENV['SERIAL_PORT']} -b 57600 -U flash:w:#{hex_file}"
+cmd = "avrdude -F -V -c arduino -p #{ENV['MCU']} -P #{ENV['SERIAL_PORT']} -b #{ENV['BAUD']} -U flash:w:#{hex_file}"
 puts cmd
 sh cmd
 end
+
+desc "Burn the correct fuses for the AVR."
+task :fuses => [:serial_port] do
+cmd = "avrdude -F -V -c arduino -p #{ENV['MCU']} -P #{ENV['SERIAL_PORT']} -b #{ENV['BAUD']} -U #{ENV['LFUSE']} -U #{ENV['HFUSE']} -U #{ENV['EFUSE']}"
+puts cmd
+sh cmd
+end
+

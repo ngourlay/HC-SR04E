@@ -1,19 +1,22 @@
 #include <inttypes.h>
 
 void
-USI_TWI_Slave_Initialise( uint8_t );
+i2c_init( uint8_t );
 
 void
-USI_TWI_Transmit_Byte( uint8_t );
+i2c_transmit_byte( uint8_t );
 
 uint8_t
-USI_TWI_Receive_Byte( void );
+i2c_receive_byte( void );
 
 uint8_t
-USI_TWI_Data_In_Receive_Buffer( void );
+i2c_data_in_receive_buffer( void );
 
 void
-Timer_Init(void);
+flush_i2c_buffers( void );
+
+void
+timer_init(void);
 
 //////////////////////////////////////////////////////////////////
 ///////////////// Driver Buffer Definitions //////////////////////

@@ -59,7 +59,7 @@ static volatile uint8_t TWI_TxTail;
 
 /*! \brief Flushes the TWI buffers
  */
-void Flush_TWI_Buffers(void)
+void flush_i2c_buffers(void)
 {
     TWI_RxTail = 0;
     TWI_RxHead = 0;
@@ -67,18 +67,9 @@ void Flush_TWI_Buffers(void)
     TWI_TxHead = 0;
 }
 
-//********** USI_TWI functions **********//
-
-/*! \brief
- * Initialise USI for TWI Slave mode.
- */
- 
-
-
- 
-void USI_TWI_Slave_Initialise( unsigned char TWI_ownAddress )
+void i2c_init( unsigned char TWI_ownAddress )
 {
-  Flush_TWI_Buffers();
+  flush_i2c_buffers();
 
   TWI_slaveAddress = TWI_ownAddress;
 
@@ -99,7 +90,7 @@ void USI_TWI_Slave_Initialise( unsigned char TWI_ownAddress )
 
 /*! \brief Puts data in the transmission buffer, Waits if buffer is full.
 */
-void USI_TWI_Transmit_Byte( unsigned char data )
+void i2c_transmit_byte( unsigned char data )
 {
     unsigned char tmphead;
 
@@ -111,7 +102,7 @@ void USI_TWI_Transmit_Byte( unsigned char data )
 
 /*! \brief Returns a byte from the receive buffer. Waits if buffer is empty.
  */
-unsigned char USI_TWI_Receive_Byte( void )
+unsigned char i2c_receive_byte( void )
 {
     unsigned char tmptail;
     unsigned char tmpRxTail;                                  // Temporary variable to store volatile
@@ -124,7 +115,7 @@ unsigned char USI_TWI_Receive_Byte( void )
 
 /*! \brief Check if there is data in the receive buffer.
  */
-unsigned char USI_TWI_Data_In_Receive_Buffer( void )
+unsigned char i2c_data_in_receive_buffer( void )
 {
     unsigned char tmpRxTail;                            // Temporary variable to store volatile
     tmpRxTail = TWI_RxTail;                             // Not necessary, but prevents warnings

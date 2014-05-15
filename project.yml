@@ -19,8 +19,11 @@
 
 :environment:
   - :mcu: attiny24
-  - :fcpu: 16000000UL
-  - :serial_port: /dev/ttyUSB0
+  - :f_cpu: 16000000UL
+  - :baud: 19200
+  - :lfuse: 'lfuse:w:0xff:m'
+  - :hfuse: 'hfuse:w:0xdf:m'
+  - :efuse: 'efuse:w:0xff:m'
   - :objcopy: avr-objcopy
 
 :extension:
@@ -36,6 +39,12 @@
       - -mmcu=#{ENV['MCU']}
       - -Iinclude/
       - -Wall
+      - -Wextra
+      - -std=gnu11
+      - -pedantic
+      - -Wmissing-prototypes
+      - -Wstrict-prototypes
+      - -Wold-style-definition
       - -Os
       - -c
       - -o ${2}
