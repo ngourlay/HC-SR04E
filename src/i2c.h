@@ -40,27 +40,27 @@ timer_init(void);
 #endif
 
 
-#define USI_SLAVE_StateNone                    (0x06)
-#define USI_SLAVE_CHECK_ADDRESS                (0x00)
-#define USI_SLAVE_SEND_DATA                    (0x01)
-#define USI_SLAVE_REQUEST_REPLY_FROM_SEND_DATA (0x02)
-#define USI_SLAVE_CHECK_REPLY_FROM_SEND_DATA   (0x03)
-#define USI_SLAVE_REQUEST_DATA                 (0x04)
-#define USI_SLAVE_GET_DATA_AND_SEND_ACK        (0x05)
+#define i2c_StateNone                    (0x06)
+#define i2c_CHECK_ADDRESS                (0x00)
+#define i2c_SEND_DATA                    (0x01)
+#define i2c_REQUEST_REPLY_FROM_SEND_DATA (0x02)
+#define i2c_CHECK_REPLY_FROM_SEND_DATA   (0x03)
+#define i2c_REQUEST_DATA                 (0x04)
+#define i2c_GET_DATA_AND_SEND_ACK        (0x05)
 
 
 //! Functions implemented as macros
 #define SET_USI_TO_SEND_ACK()						\
   {									\
     USIDR    =  0;                                              /* Prepare ACK                        */ \
-    DDR_USI |=  (1<<PORT_USI_SDA);                              /* Set SDA as output                  */ \
+    DDR_I2C |=  (1<<PORT_I2C_SDA);                              /* Set SDA as output                  */ \
     USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond */ \
       (0x0E<<USICNT0);                                          /* set USI counter to shift 1 bit.    */ \
   }
 
 #define SET_USI_TO_READ_ACK()						\
   {									\
-    DDR_USI &=  ~(1<<PORT_USI_SDA);                             /* Set SDA as intput */	\
+    DDR_I2C &=  ~(1<<PORT_I2C_SDA);                             /* Set SDA as intput */	\
     USIDR    =  0;                                              /* Prepare ACK        */ \
     USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond  */ \
       (0x0E<<USICNT0);                                          /* set USI counter to shift 1 bit. */ \
@@ -78,14 +78,14 @@ timer_init(void);
 
 #define SET_USI_TO_SEND_DATA()						\
   {									\
-    DDR_USI |=  (1<<PORT_USI_SDA);                                  /* Set SDA as output                  */ \
+    DDR_I2C |=  (1<<PORT_I2C_SDA);                                  /* Set SDA as output                  */ \
     USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      /* Clear all flags, except Start Cond */ \
       (0x0<<USICNT0);                                     /* set USI to shift out 8 bits        */ \
   }
 
 #define SET_USI_TO_READ_DATA()						\
   {									\
-    DDR_USI &= ~(1<<PORT_USI_SDA);                                  /* Set SDA as input                   */ \
+    DDR_I2C &= ~(1<<PORT_I2C_SDA);                                  /* Set SDA as input                   */ \
     USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      /* Clear all flags, except Start Cond */ \
       (0x0<<USICNT0);                                     /* set USI to shift out 8 bits        */ \
   }
