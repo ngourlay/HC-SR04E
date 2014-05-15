@@ -4,7 +4,7 @@
 
 int main( void )
 {
-  unsigned char i2c_slaveAddress, temp;
+  uint8_t i2c_slaveAddress, temp;
 
   DDRA  |= 1<<0;
   PORTA |= 1<<0;

@@ -45,6 +45,7 @@
       - -Wmissing-prototypes
       - -Wstrict-prototypes
       - -Wold-style-definition
+      - -fshort-enums
       - -Os
       - -c
       - -o ${2}
