@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "i2c.h"
 
 int main( void )
@@ -8,7 +9,6 @@ int main( void )
 
   DDRA  |= 1<<0;
   PORTA |= 1<<0;
-
 
   // Own TWI slave address
   i2c_slaveAddress = 0x10;
@@ -19,13 +19,14 @@ int main( void )
   for(;;)
   {
 
-    while( i2c_data_in_receive_buffer() )
-    {
-        temp = i2c_receive_byte();
-	if(temp % 2){
-	  PORTA ^= 1;
-	}
+    temp = i2c_receive_byte(3);
+    if(temp % 2){
+      PORTA |= 1;
+    } else {
+      PORTA &= ~1;
     }
+    _delay_ms(50);
+    //	i2c_transmit_byte();
   }
 }
 

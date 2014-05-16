@@ -6,6 +6,7 @@
   #include <avr/interrupt.h>
 #endif /* TEST */
 
+#include <stdbool.h>
 #include "i2c.h"
 
 /* Driver Buffer Definitions */
@@ -19,7 +20,7 @@
 
 // 1,2,4,8,16,32,64,128 or 256 bytes are allowed buffer sizes                                                                         
 #define I2C_TX_BUFFER_SIZE  (16)
-#define I2C_TX_BUFFER_MASK ( I2C_TX_BUFFER_SIZE - 1 )
+#define registerAddressMask ( I2C_TX_BUFFER_SIZE - 1 )
 
 #if ( I2C_TX_BUFFER_SIZE & I2C_TX_BUFFER_MASK )
   #error I2C TX buffer size is not a power of 2
@@ -49,13 +50,9 @@ static __inline__ void SET_USI_TO_READ_DATA( void );
 
 /*! Local variables
  */
-static uint8_t I2C_RxBuf[I2C_RX_BUFFER_SIZE];
-static volatile uint8_t I2C_RxHead;
-static volatile uint8_t I2C_RxTail;
-
-static uint8_t I2C_TxBuf[I2C_TX_BUFFER_SIZE];
-static volatile uint8_t I2C_TxHead;
-static volatile uint8_t I2C_TxTail;
+static volatile uint8_t registerAddress;
+static volatile bool isRegisterAddress;
+uint8_t registerBank[I2C_TX_BUFFER_SIZE];
 
 static volatile enum {
   i2c_StateNone,
@@ -71,17 +68,14 @@ static volatile enum {
  */
 static void flush_i2c_buffers(void)
 {
-    I2C_RxTail = 0;
-    I2C_RxHead = 0;
-    I2C_TxTail = 0;
-    I2C_TxHead = 0;
 }
 
 void i2c_init( uint8_t I2C_ownAddress )
 {
-  flush_i2c_buffers();
-  
   I2C_slaveAddress = I2C_ownAddress;
+  registerAddress = 0;
+  
+  flush_i2c_buffers();
   
   PORT_I2C |=  (1<<PORT_I2C_SCL);                                 // Set SCL high
   PORT_I2C |=  (1<<PORT_I2C_SDA);                                 // Set SDA high
@@ -98,34 +92,11 @@ void i2c_init( uint8_t I2C_ownAddress )
 }
 
 
-/*! \brief Puts data in the transmission buffer, Waits if buffer is full.
- */
-void i2c_transmit_byte( uint8_t data )
-{
-  uint8_t tmphead;
-  
-  tmphead = ( I2C_TxHead + 1 ) & I2C_TX_BUFFER_MASK;         // Calculate buffer index.
-  while ( tmphead == I2C_TxTail );                           // Wait for free space in buffer.
-  I2C_TxBuf[tmphead] = data;                                 // Store data in buffer.
-  I2C_TxHead = tmphead;                                      // Store new index.
-}
-
 /*! \brief Returns a byte from the receive buffer. Waits if buffer is empty.
  */
-uint8_t i2c_receive_byte( void )
+uint8_t i2c_receive_byte( uint8_t r )
 {
-  uint8_t tmptail;
-  while ( I2C_RxHead == I2C_RxTail );
-  tmptail = ( I2C_RxTail + 1 ) & I2C_RX_BUFFER_MASK;        // Calculate buffer index
-  I2C_RxTail = tmptail;                                     // Store new index
-  return I2C_RxBuf[tmptail];                                // Return data from the buffer.
-}
-
-/*! \brief Check if there is data in the receive buffer.
- */
-uint8_t i2c_data_in_receive_buffer( void )
-{
-  return ( I2C_RxHead != I2C_RxTail );                 // Return 0 (FALSE) if the receive buffer is empty.
+  return registerBank[r];                                // Return data from the buffer.
 }
 
 /*! \brief Usi start condition ISR
@@ -137,6 +108,7 @@ ISR(USI_START_vect)
 {
   // Set default starting conditions for new I2C package
   USI_I2C_Overflow_State = i2c_CHECK_ADDRESS;
+  isRegisterAddress = true;
   DDR_I2C  &= ~(1<<PORT_I2C_SDA);                                 // Set SDA as input
   
   while ( (PIN_I2C & (1<<PORT_I2C_SCL)) && (!(PIN_I2C & (1<<PORT_I2C_SDA))));
@@ -168,9 +140,6 @@ ISR(USI_START_vect)
  */
 ISR(USI_OVF_vect)
 {
-  uint8_t tmpTxTail;     // Temporary variables to store volatiles
-  uint8_t tmpUSIDR;
-  
   switch (USI_I2C_Overflow_State){
     
   case i2c_StateNone:
@@ -205,20 +174,14 @@ ISR(USI_OVF_vect)
     
     // Copy data from buffer to USIDR and set USI to shift byte. Next i2c_REQUEST_REPLY_FROM_SEND_DATA
   case i2c_SEND_DATA:
-    
     // Get data from Buffer
-    tmpTxTail = I2C_TxTail;           // Not necessary, but prevents warnings
-    if (I2C_TxHead != tmpTxTail ){
-      I2C_TxTail = ( I2C_TxTail + 1 ) & I2C_TX_BUFFER_MASK;
-      USIDR = I2C_TxBuf[I2C_TxTail];
-    } else {// If the buffer is empty then:
-      SET_USI_TO_I2C_START_CONDITION_MODE();
-      return;
-    }
+    USIDR = registerBank[registerAddress];
+    registerAddress = (registerAddress + 1) & registerAddressMask;
+    
     USI_I2C_Overflow_State = i2c_REQUEST_REPLY_FROM_SEND_DATA;
     SET_USI_TO_SEND_DATA();
     break;
-    
+
     // Set USI to sample reply from master. Next i2c_CHECK_REPLY_FROM_SEND_DATA
   case i2c_REQUEST_REPLY_FROM_SEND_DATA:
     USI_I2C_Overflow_State = i2c_CHECK_REPLY_FROM_SEND_DATA;
@@ -234,10 +197,14 @@ ISR(USI_OVF_vect)
     
     // Copy data from USIDR and send ACK. Next i2c_REQUEST_DATA
   case i2c_GET_DATA_AND_SEND_ACK:
-    // Put data into Buffer
-    I2C_RxHead = ( I2C_RxHead + 1 ) & I2C_RX_BUFFER_MASK;
-    I2C_RxBuf[I2C_RxHead] = USIDR;
-    
+    if(isRegisterAddress){
+      registerAddress = (USIDR & registerAddressMask);
+      isRegisterAddress = false;
+    } else {
+      // Put data into Buffer
+      registerBank[registerAddress] = USIDR;
+      registerAddress = (registerAddress + 1) & registerAddressMask;
+    }
     USI_I2C_Overflow_State = i2c_REQUEST_DATA;
     SET_USI_TO_SEND_ACK();
     break;
