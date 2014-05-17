@@ -2,6 +2,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "i2c.h"
+#include "HC_SR04.h"
 
 int main( void )
 {
@@ -19,14 +20,13 @@ int main( void )
   for(;;)
   {
 
-    temp = i2c_receive_byte(3);
+    //    temp = i2c_receive_byte(3);
+    temp = getRegisterU8(3);
     if(temp % 2){
       PORTA |= 1;
     } else {
       PORTA &= ~1;
     }
-    _delay_ms(50);
-    //	i2c_transmit_byte();
   }
 }
 

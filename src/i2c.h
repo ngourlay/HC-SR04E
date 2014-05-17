@@ -1,12 +1,10 @@
+#ifndef _I2C_H
+#define _I2C_H
 #include <inttypes.h>
-#include <stdbool.h>
+
+extern uint8_t registerBank[];
 
 void
-i2c_init( uint8_t );
+i2c_init( const uint8_t i2c_address );
 
-void
-i2c_transmit_byte( void );
-
-uint8_t
-i2c_receive_byte( uint8_t );
-
+#endif /* _I2C_H */

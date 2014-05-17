@@ -9,23 +9,13 @@
 #include <stdbool.h>
 #include "i2c.h"
 
-/* Driver Buffer Definitions */
-/* 1,2,4,8,16,32,64,128 or 256 bytes are allowed buffer sizes */
-#define I2C_RX_BUFFER_SIZE  (16)
-#define I2C_RX_BUFFER_MASK ( I2C_RX_BUFFER_SIZE - 1 )
+// 1, 2, 4, 8, 16, 32, 64, 128, or 256 bytes are allowed bank sizes
+#define REGISTER_BANK_SIZE (16)
+#define REGISTER_ADDRESS_MASK ( REGISTER_BANK_SIZE - 1 )
 
-#if ( I2C_RX_BUFFER_SIZE & I2C_RX_BUFFER_MASK )
-  #error I2C RX buffer size is not a power of 2
+#if ( REGISTER_BANK_SIZE & REGISTER_BANK_MASK )
+  #error Register bank size is not a power of 2
 #endif
-
-// 1,2,4,8,16,32,64,128 or 256 bytes are allowed buffer sizes                                                                         
-#define I2C_TX_BUFFER_SIZE  (16)
-#define registerAddressMask ( I2C_TX_BUFFER_SIZE - 1 )
-
-#if ( I2C_TX_BUFFER_SIZE & I2C_TX_BUFFER_MASK )
-  #error I2C TX buffer size is not a power of 2
-#endif
-
 
 // ATtiny24/44/84-dependent definitions
 #define DDR_I2C      DDRA
@@ -37,8 +27,10 @@
 
 /*! Static Variables
  */
-
 static uint8_t I2C_slaveAddress;
+static volatile uint8_t registerAddress;
+static volatile bool isRegisterAddress;
+uint8_t registerBank[REGISTER_BANK_SIZE];
 
 /* Static functions */
 static __inline__ void SET_USI_TO_SEND_ACK( void );
@@ -46,13 +38,6 @@ static __inline__ void SET_USI_TO_READ_ACK( void );
 static __inline__ void SET_USI_TO_I2C_START_CONDITION_MODE( void );
 static __inline__ void SET_USI_TO_SEND_DATA( void );
 static __inline__ void SET_USI_TO_READ_DATA( void );
-
-
-/*! Local variables
- */
-static volatile uint8_t registerAddress;
-static volatile bool isRegisterAddress;
-uint8_t registerBank[I2C_TX_BUFFER_SIZE];
 
 static volatile enum {
   i2c_StateNone,
@@ -64,23 +49,17 @@ static volatile enum {
   i2c_GET_DATA_AND_SEND_ACK
 } USI_I2C_Overflow_State;
 
-/*! \brief Flushes the I2C buffers
- */
-static void flush_i2c_buffers(void)
-{
-}
 
 void i2c_init( uint8_t I2C_ownAddress )
 {
   I2C_slaveAddress = I2C_ownAddress;
   registerAddress = 0;
   
-  flush_i2c_buffers();
-  
   PORT_I2C |=  (1<<PORT_I2C_SCL);                                 // Set SCL high
   PORT_I2C |=  (1<<PORT_I2C_SDA);                                 // Set SDA high
   DDR_I2C  |=  (1<<PORT_I2C_SCL);                                 // Set SCL as output
   DDR_I2C  &= ~(1<<PORT_I2C_SDA);                                 // Set SDA as input
+
   USICR    =  (1<<USISIE)|(0<<USIOIE)|                            // Enable Start Condition Interrupt. Disable Overflow Interrupt.
     (1<<USIWM1)|(1<<USIWM0)|                            // Set USI in Two-wire mode. No USI Counter overflow prior
     // to first Start Condition (potentail failure)
@@ -91,15 +70,7 @@ void i2c_init( uint8_t I2C_ownAddress )
   
 }
 
-
-/*! \brief Returns a byte from the receive buffer. Waits if buffer is empty.
- */
-uint8_t i2c_receive_byte( uint8_t r )
-{
-  return registerBank[r];                                // Return data from the buffer.
-}
-
-/*! \brief Usi start condition ISR
+/* Usi start condition ISR
  * Detects the USI_I2C Start Condition and intialises the USI
  * for reception of the "I2C Address" packet.
  */
@@ -176,7 +147,7 @@ ISR(USI_OVF_vect)
   case i2c_SEND_DATA:
     // Get data from Buffer
     USIDR = registerBank[registerAddress];
-    registerAddress = (registerAddress + 1) & registerAddressMask;
+    registerAddress = (registerAddress + 1) & REGISTER_ADDRESS_MASK;
     
     USI_I2C_Overflow_State = i2c_REQUEST_REPLY_FROM_SEND_DATA;
     SET_USI_TO_SEND_DATA();
@@ -198,12 +169,12 @@ ISR(USI_OVF_vect)
     // Copy data from USIDR and send ACK. Next i2c_REQUEST_DATA
   case i2c_GET_DATA_AND_SEND_ACK:
     if(isRegisterAddress){
-      registerAddress = (USIDR & registerAddressMask);
+      registerAddress = (USIDR & REGISTER_ADDRESS_MASK);
       isRegisterAddress = false;
     } else {
       // Put data into Buffer
       registerBank[registerAddress] = USIDR;
-      registerAddress = (registerAddress + 1) & registerAddressMask;
+      registerAddress = (registerAddress + 1) & REGISTER_ADDRESS_MASK;
     }
     USI_I2C_Overflow_State = i2c_REQUEST_DATA;
     SET_USI_TO_SEND_ACK();
