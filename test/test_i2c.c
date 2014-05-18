@@ -27,8 +27,28 @@ void checkAddress(uint8_t address)
   isr_USI_OVF_vect();
 }
 
-uint8_t getOneByte(uint8_t address)
+void setRegisterAddress(uint8_t address,uint8_t r)
 {
+  doSTART();
+  USIDR = (address<<1)+0;
+
+  isr_USI_OVF_vect(); // CHECK ADDRESS
+
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // REQUEST_DATA
+  }
+
+  USIDR = r;
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // GET_DATA_AND_SEND_ACK
+  }
+}
+
+uint8_t getOneByte(uint8_t address,uint8_t r)
+{
+  uint8_t ret;
+  setRegisterAddress(address,r);
+
   doSTART();
   USIDR = (address<<1)+1;
 
@@ -37,12 +57,47 @@ uint8_t getOneByte(uint8_t address)
   if(USICR & (1<<USIOIE)){
     isr_USI_OVF_vect(); // SEND_DATA
   }
-  return USIDR;
+
+  ret = USIDR;
+
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // REQUEST_REPLY_FROM_SEND_DATA
+  }
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // CHECK_REPLY_FROM_SEND_DATA
+  }
+  
+  return ret;
+}
+
+void setOneByte(uint8_t address,uint8_t r,uint8_t b)
+{
+  doSTART();
+  USIDR = (address<<1)+0;
+
+  isr_USI_OVF_vect(); // CHECK ADDRESS
+
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // REQUEST_DATA
+  }
+
+  USIDR = r;
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // GET_DATA_AND_SEND_ACK
+  }
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // REQUEST_DATA
+  }
+
+  USIDR = b;
+  if(USICR & (1<<USIOIE)){
+    isr_USI_OVF_vect(); // GET_DATA_AND_SEND_ACK
+  }
 }
 
 void setUp(void)
 {
-  registerBank[0] = 42; // just some number to be tested
+
   PORTA = 0;
   DDRA = 1<<PORT_I2C_SDA;
   USICR = 0;
@@ -108,6 +163,28 @@ void test_CorrectAddressWorks(void)
 
 void test_getOneByteIsCorrect(void)
 {
-  uint8_t temp = getOneByte(address);
-  TEST_ASSERT_EQUAL_UINT8(42,temp);
+  i2c_setRegister(3,26);
+  TEST_ASSERT_EQUAL_UINT8(26,getOneByte(address,3));
 }
+
+void test_setOneByteIsCorrect(void)
+{
+  setOneByte(address,1,43);
+  TEST_ASSERT_EQUAL_UINT8(43,getOneByte(address,1));
+}
+
+void test_getOneByteWithReadMask(void)
+{
+  i2c_setRegister(4,0xFF);
+  i2c_setRegisterReadWriteMasks(4,0xF0,0x00);
+  TEST_ASSERT_EQUAL_HEX8(0x0F,getOneByte(address,4));
+}
+
+void test_setOneByteWithWriteMask(void)
+{
+  i2c_setRegister(4,0);
+  i2c_setRegisterReadWriteMasks(4,0x00,0xF0);
+  setOneByte(address,4,0xFF);
+  TEST_ASSERT_EQUAL_HEX8(0x0F,getOneByte(address,4));
+}
+

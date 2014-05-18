@@ -30,7 +30,9 @@
 static uint8_t I2C_slaveAddress;
 static volatile uint8_t registerAddress;
 static volatile bool isRegisterAddress;
-uint8_t registerBank[REGISTER_BANK_SIZE];
+static volatile uint8_t registerBank[REGISTER_BANK_SIZE];
+static uint8_t registerBankReadMask[REGISTER_BANK_SIZE];
+static uint8_t registerBankWriteMask[REGISTER_BANK_SIZE];
 
 /* Static functions */
 static __inline__ void SET_USI_TO_SEND_ACK( void );
@@ -146,7 +148,7 @@ ISR(USI_OVF_vect)
     // Copy data from buffer to USIDR and set USI to shift byte. Next i2c_REQUEST_REPLY_FROM_SEND_DATA
   case i2c_SEND_DATA:
     // Get data from Buffer
-    USIDR = registerBank[registerAddress];
+    USIDR = registerBank[registerAddress] & ~registerBankReadMask[registerAddress];
     registerAddress = (registerAddress + 1) & REGISTER_ADDRESS_MASK;
     
     USI_I2C_Overflow_State = i2c_REQUEST_REPLY_FROM_SEND_DATA;
@@ -173,7 +175,7 @@ ISR(USI_OVF_vect)
       isRegisterAddress = false;
     } else {
       // Put data into Buffer
-      registerBank[registerAddress] = USIDR;
+      registerBank[registerAddress] = USIDR & ~registerBankWriteMask[registerAddress];
       registerAddress = (registerAddress + 1) & REGISTER_ADDRESS_MASK;
     }
     USI_I2C_Overflow_State = i2c_REQUEST_DATA;
@@ -225,5 +227,24 @@ SET_USI_TO_READ_DATA( void )
   DDR_I2C &= ~(1<<PORT_I2C_SDA);                                  /* Set SDA as input                   */
   USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      /* Clear all flags, except Start Cond */
     (0x0<<USICNT0);                                     /* set USI to shift out 8 bits        */
+}
+
+uint8_t
+i2c_getRegister( const uint8_t reg )
+{
+  return registerBank[reg];
+}
+
+void
+i2c_setRegister( const uint8_t reg, const uint8_t data )
+{
+  registerBank[reg] = data;
+}
+
+void
+i2c_setRegisterReadWriteMasks( const uint8_t reg, const uint8_t rmask, const uint8_t wmask )
+{
+  registerBankReadMask[reg] = rmask;
+  registerBankWriteMask[reg] = wmask;
 }
 
