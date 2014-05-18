@@ -178,12 +178,13 @@ uint8_t USIDR;
 //#define PINB2   2
 //#define PINB1   1
 //#define PINB0   0
-//
+
 //#define DDRB    _SFR_IO8(0x17)
-//#define DDB3    3
-//#define DDB2    2
-//#define DDB1    1
-//#define DDB0    0
+uint8_t DDRB;
+#define DDB3    3
+#define DDB2    2
+#define DDB1    1
+#define DDB0    0
 //
 //#define PORTB   _SFR_IO8(0x18)
 //#define PB3     3
