@@ -4,6 +4,7 @@
 
 void setUp(void)
 {
+  tx_init();
 }
 
 void tearDown(void)
@@ -12,15 +13,48 @@ void tearDown(void)
 
 void test_DDRsCorrectAfterCreate(void)
 {
-  tx_init(false);
   TEST_ASSERT_EQUAL_HEX8((1<<3)|(1<<7),DDRA & ((1<<3)|(1<<7)));
   TEST_ASSERT_EQUAL_HEX8(1<<2,DDRB & 1<<2);
 }
 
 void test_DDRsCorrectAfterDebugCreate(void)
 {
-  tx_init(true);
-  TEST_ASSERT_EQUAL_HEX8((1<<3)|(1<<5)|(1<<7),DDRA & ((1<<3)|(1<<5)|(1<<7)));
-  TEST_ASSERT_EQUAL_HEX8(1<<2,DDRB & 1<<2);
+  tx_debug(true);
+  TEST_ASSERT_EQUAL_HEX8(1<<5,DDRA & 1<<5);
+}
+
+void test_PowerOffAfterCreate(void)
+{
+  TEST_ASSERT_EQUAL_HEX8(1<<3,DDRA & 1<<3);
+}
+
+void test_PowerOff(void)
+{
+  tx_power(false);
+  TEST_ASSERT_EQUAL_HEX8(1<<3,PORTA & 1<<3);
+}
+
+void test_PowerOn(void)
+{
+  tx_power(true);
+  TEST_ASSERT_EQUAL_HEX8(0,PORTA & 1<<3);
+}
+
+void test_Peak(void)
+{
+  tx_power(true);
+  tx_trough();
+  tx_peak();
+  TEST_ASSERT_EQUAL_HEX8(1<<7,PORTA & 1<<7);
+  TEST_ASSERT_EQUAL_HEX8(0,PORTB & 1<<2);
+}
+
+void test_Trough(void)
+{
+  tx_power(true);
+  tx_peak();
+  tx_trough();
+  TEST_ASSERT_EQUAL_HEX8(0,PORTA & 1<<7);
+  TEST_ASSERT_EQUAL_HEX8(1<<2,PORTB & 1<<2);
 }
 

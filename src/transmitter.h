@@ -5,9 +5,18 @@
 
 // debug will pulse the PA5 (MISO) pin on transmit
 void
-tx_init(bool debug);
+tx_init( void );
 
 void
-tx_fire(void);
+tx_debug( bool on );
+
+void
+tx_power( bool on );
+
+void
+tx_peak( void );
+
+void
+tx_trough( void );
 
 #endif /* _TRANSMITTER_H */

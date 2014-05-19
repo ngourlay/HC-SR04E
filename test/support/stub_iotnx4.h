@@ -185,12 +185,13 @@ uint8_t DDRB;
 #define DDB2    2
 #define DDB1    1
 #define DDB0    0
-//
+
 //#define PORTB   _SFR_IO8(0x18)
-//#define PB3     3
-//#define PB2     2
-//#define PB1     1
-//#define PB0     0
+uint8_t PORTB;
+#define PB3     3
+#define PB2     2
+#define PB1     1
+#define PB0     0
 
 //#define PINA    _SFR_IO8(0x19)
 uint8_t PINA;
