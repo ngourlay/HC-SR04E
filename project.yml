@@ -18,7 +18,7 @@
 #  :use_assembly: FALSE
 
 :environment:
-  - :mcu: attiny24
+  - :mcu: attiny84
   - :f_cpu: 16000000UL
   - :baud: 19200
   - :lfuse: 'lfuse:w:0xff:m'

@@ -7,8 +7,8 @@ int main( void )
 {
   uint8_t i2c_slaveAddress, temp;
 
-  DDRA  |= 1<<0;
-  PORTA |= 1<<0;
+  DDRA  |= 1<<PA7;
+  PORTA |= 1<<PA7;
 
   // Own TWI slave address
   i2c_slaveAddress = 0x10;
@@ -19,12 +19,11 @@ int main( void )
   for(;;)
   {
 
-    //    temp = i2c_receive_byte(3);
     temp = i2c_getRegister(3);
     if(temp % 2){
-      PORTA |= 1;
+      PORTA |= (1<<PA7);
     } else {
-      PORTA &= ~1;
+      PORTA &= ~(1<<PA7);
     }
   }
 }
