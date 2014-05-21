@@ -28,21 +28,21 @@ void test_PowerOffAfterCreate(void)
   TEST_ASSERT_EQUAL_HEX8(1<<3,DDRA & 1<<3);
 }
 
-void test_PowerOff(void)
+void test_Stop(void)
 {
-  tx_power(false);
+  tx_stop();
   TEST_ASSERT_EQUAL_HEX8(1<<3,PORTA & 1<<3);
 }
 
-void test_PowerOn(void)
+void test_Start(void)
 {
-  tx_power(true);
+  tx_start();
   TEST_ASSERT_EQUAL_HEX8(0,PORTA & 1<<3);
 }
 
 void test_Peak(void)
 {
-  tx_power(true);
+  tx_start();
   tx_trough();
   tx_peak();
   TEST_ASSERT_EQUAL_HEX8(1<<7,PORTA & 1<<7);
@@ -51,7 +51,7 @@ void test_Peak(void)
 
 void test_Trough(void)
 {
-  tx_power(true);
+  tx_start();
   tx_peak();
   tx_trough();
   TEST_ASSERT_EQUAL_HEX8(0,PORTA & 1<<7);
