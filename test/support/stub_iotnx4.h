@@ -323,8 +323,8 @@ uint8_t PORTA;
 //#define COM0A0  6
 //#define COM0B1  5
 //#define COM0B0  4
-//#define WGM01   1
-//#define WGM00   0
+#define WGM01   1
+#define WGM00   0
 //
 //#define OSCCAL  _SFR_IO8(0x31)
 //
@@ -334,9 +334,9 @@ uint8_t PORTA;
 //#define FOC0A   7
 //#define FOC0B   6
 //#define WGM02   3
-//#define CS02    2
-//#define CS01    1
-//#define CS00    0
+#define CS02    2
+#define CS01    1
+#define CS00    0
 //
 //#define MCUSR   _SFR_IO8(0x34)
 //#define WDRF    3

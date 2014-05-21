@@ -3,6 +3,9 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
+extern const uint8_t TX_TCCRA;
+extern const uint8_t TX_TCCRB;
+
 // debug will pulse the PA5 (MISO) pin on transmit
 void
 tx_init( void );
